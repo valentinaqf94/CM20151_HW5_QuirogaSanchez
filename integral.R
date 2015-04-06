@@ -1,0 +1,112 @@
+library('ggplot2')
+library('pracma')
+
+#A. Function that calculates integrals with the rejection sampling method. 
+#First, we will build up a function in R which takes as parameters the number of points into our phase space, the function we want to integrate,
+# and both maximun and miminum values into our integration domain.
+#Moreover, the function we want to integrate must be smooth and positive all over the integration domain.
+integrar <- function(n,f, x_min, x_max)
+{  
+  #Starting we need two vectors which represent 10000 evenly spaced numbers, ready to be filled up in next steps. One for x, the independent variable, and onde for y which depends on 
+  #x. Right after, we take the maximun and minimum numbers and save them into variables. This is because they will define our phase space of random points. In addition, we take
+  #just the random points that seem to be useful for our function (that means they must be inside the interval from the min to the max value, below the function). 
+  xvec <- linspace(x_min, x_max,  10000)   
+  yvec <- f(xvec)
+  y_max <- max(yvec)   
+  y_min <- min(yvec)
+  x_random <- runif(n, x_min, x_max)
+  y_random <- runif(n, y_min, y_max)
+  #We had saved this points, the ones capable of represent the function we want to integrate. To see how this process occurs, we had made some simple graphs to show it. 
+  
+  #The first one shows the line function we want to integrate.
+  data1 <- data.frame(xvec, yvec)
+  plot1 <- ggplot(data1, aes(x=xvec,y=yvec)) + ggtitle('Function to integrate') + geom_line(colour = 'blue')   
+  print(plot1) 
+  
+  #Second one shows the phase space of this calculation.
+  data <- data.frame(x_random, y_random)
+  plot2 <- ggplot(data, aes(x=x_random,y=y_random)) + ggtitle('Random points') + geom_point(colour = 'red')
+  print(plot2)
+  
+  #Third one shows the final reconstruction of the function integral with this method of sampling rejection.
+  #We choose only the points that lie below the function, these are the ones we plot. 
+  
+  delta <- f(x_random) - y_random
+  under <- which(delta>0.0) #es como la funcion where en python, un boolean para evitar hacer un for.
+  a <- x_random[under]
+  b <- y_random[under]
+  data2 <- data.frame(a, b)
+  plot3 <- ggplot(data2, aes(a,b)) + ggtitle('Calculated integral') + geom_point(colour = 'green')
+  print(plot3)
+  
+  #Finally, we get to calculate the numerical result. If we recall the integral as a huge sum over tiny columns along the function curve, we can calculate the area for each one
+  #taking the lenght as the y coordinate and the width as the x coordinate and, of course, these will be the interval between the max and min values in each case. 
+  columna_int <- (x_max-x_min)*(y_max-y_min)
+  integral = columna_int*(size(under)/(1.0*size(y_random)))  #bota un warning pero no se por que
+  return (integral)
+  
+  #The total value of the integral will be the total number of points under the curve within the total area, calculated above.
+  
+  
+}
+
+#B. Calculate cos(50*x)+sin(20*x))^2 in [0,1]
+#Using our function, and calling c the function we want to integrate
+c <- function(x)
+{
+  return((cos(50*x)+sin(20*x))^2)   
+}
+
+print(integrar(10000,c,0,1)) # U[0.1]
+
+#Now comparing with the r-function Integrate
+integrar2<- function(x) {
+  integrate(c,lower=0, upper=1)
+}
+
+print(integrar2(c))
+
+#We see that the values of both process are very alike and still inside the absolute value.
+
+#C 
+#Calculate 1/((1 + x^2)*pi) in [2,inf]. At first sight, this integral looks extremely complicated, nevertheless, with some research we had discovered the easiest way to solve it: Change 
+#of variable. For this we decided to write y=1/x, therefore our new function is x^(-2)/(pi*(1+x^(-2))), and replacing in the limits we get our new integration interval as [0, 1/2]
+d <- function(x)
+{
+  return(x^(-2)/(pi*(1+x^(-2))))   
+}
+
+print(integrar(10000,d, 0.01, 0.5))
+
+#Now comparing with the r-function Integrate
+integrar3<- function(x) {
+  integrate(d,lower=0, upper=0.5)
+}
+
+print(integrar3(d))
+
+#In this case, we see an important difference between the values obtained through the methods, but still in approximation correspond to close values, taking into account the absolute value calculated.
+
+################################################
+#Carlos, no se si sea innecesario generar la grafica del espacio de fase, tu me diras si la borramos o que... de resto esta lista! :D
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
